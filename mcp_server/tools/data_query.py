@@ -17,20 +17,22 @@ from ..utils.validators import (
     validate_date_query,
     normalize_date_range
 )
-from ..utils.errors import MCPError
+from ..utils.errors import MCPError, InvalidParameterError
 
 
 class DataQueryTools:
     """数据查询工具类"""
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str = None, readonly: bool = False, data_root: str = None):
         """
         初始化数据查询工具
 
         Args:
             project_root: 项目根目录
+            readonly: 只读模式（透传数据服务，Web 层使用）
+            data_root: 数据根目录覆盖（D9②）
         """
-        self.data_service = DataService(project_root)
+        self.data_service = DataService(project_root, readonly=readonly, data_root=data_root)
 
     def get_latest_news(
         self,
@@ -301,6 +303,77 @@ class DataQueryTools:
                     "platforms": platforms or "全部平台"
                 },
                 "data": news_list
+            }
+
+        except MCPError as e:
+            return {
+                "success": False,
+                "error": e.to_dict()
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": str(e)
+                }
+            }
+
+    # ========================================
+    # 单条新闻深度查询（design/03 §2.4 rank-history 数据源）
+    # ========================================
+
+    def get_news_rank_history(
+        self,
+        date: Union[str, Dict, None] = None,
+        news_id: int = None,
+        include_title_changes: bool = True,
+    ) -> Dict:
+        """
+        查询单条新闻的排名轨迹（含可选标题变更历史）
+
+        Args:
+            date: 日期（"YYYY-MM-DD" / "今天" 等），默认今天；dict 只取 start（单日语义）
+            news_id: news_items.id（必填）
+            include_title_changes: 是否附带标题变更历史
+
+        Returns:
+            {"success": True, "summary": {...}, "data": {"news", "rank_history", "title_changes"}}
+
+        Example:
+            >>> tools = DataQueryTools()
+            >>> result = tools.get_news_rank_history(date="2025-12-27", news_id=1)
+            >>> print(result['data']['rank_history'][0]['rank'])
+        """
+        try:
+            if news_id is None:
+                raise InvalidParameterError("缺少必填参数 news_id")
+            try:
+                news_id = int(news_id)
+            except (TypeError, ValueError):
+                raise InvalidParameterError("news_id 须为整数")
+
+            if date is None:
+                date = "今天"
+            date = normalize_date_range(date)
+            if isinstance(date, dict):
+                date = date.get("start", "今天")
+            target_date = validate_date_query(date)
+
+            result = self.data_service.get_rank_history(
+                target_date, news_id, include_title_changes=include_title_changes
+            )
+
+            return {
+                "success": True,
+                "summary": {
+                    "description": f"新闻排名轨迹（{target_date.strftime('%Y-%m-%d')} id={news_id}）",
+                    "date": target_date.strftime("%Y-%m-%d"),
+                    "news_id": news_id,
+                    "rank_points": len(result.get("rank_history") or []),
+                    "title_changes": len(result.get("title_changes") or []),
+                },
+                "data": result,
             }
 
         except MCPError as e:

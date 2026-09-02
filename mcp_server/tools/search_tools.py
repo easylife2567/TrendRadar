@@ -18,14 +18,16 @@ from ..utils.errors import MCPError, InvalidParameterError, DataNotFoundError
 class SearchTools:
     """智能新闻检索工具类"""
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str = None, readonly: bool = False, data_root: str = None):
         """
         初始化智能检索工具
 
         Args:
             project_root: 项目根目录
+            readonly: 只读模式（透传数据服务，Web 层使用）
+            data_root: 数据根目录覆盖（D9②）
         """
-        self.data_service = DataService(project_root)
+        self.data_service = DataService(project_root, readonly=readonly, data_root=data_root)
 
     def search_news_unified(
         self,

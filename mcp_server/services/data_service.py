@@ -33,15 +33,24 @@ class DataService:
         '热搜', '刷屏', '引发', '关注', '网友', '评论', '转发', '点赞'
     }
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str = None, readonly: bool = False, data_root: str = None):
         """
         初始化数据服务
 
         Args:
             project_root: 项目根目录
+            readonly: 只读模式（透传给 ParserService，Web 层使用）
+            data_root: 数据根目录覆盖（D9②，透传给 ParserService）
         """
-        self.parser = ParserService(project_root)
+        self.parser = ParserService(project_root, readonly=readonly, data_root=data_root)
         self.cache = get_cache()
+
+    @staticmethod
+    def _normalize_date(date) -> Optional[datetime]:
+        """日期入参归一化：None/datetime 直接透传，"YYYY-MM-DD" 字符串转 datetime"""
+        if date is None or isinstance(date, datetime):
+            return date
+        return datetime.strptime(str(date), "%Y-%m-%d")
 
     def get_latest_news(
         self,
@@ -838,3 +847,64 @@ class DataService:
         self.cache.set(cache_key, result)
 
         return result
+
+    # ============================================
+    # Web 层下沉查询（design/03 §2.4/§2.5，P1 差异#11）
+    # 均为薄包装：直接透传 ParserService，错误以 MCPError 子类抛出
+    # ============================================
+
+    def get_rank_history(self, target_date, news_id: int, include_title_changes: bool = True) -> Dict:
+        """
+        查询单条新闻的排名轨迹（含可选标题变更历史）
+
+        Args:
+            target_date: 目标日期（datetime 或 "YYYY-MM-DD"）
+            news_id: news_items.id
+            include_title_changes: 是否附带标题变更历史
+
+        Raises:
+            DataNotFoundError: 数据库或新闻条目不存在
+        """
+        return self.parser.get_rank_history(
+            self._normalize_date(target_date),
+            news_id,
+            include_title_changes=include_title_changes,
+        )
+
+    def get_source_health(self, target_date=None) -> Dict:
+        """
+        查询某日的采集源健康度
+
+        Args:
+            target_date: 目标日期（datetime 或 "YYYY-MM-DD"），默认今天
+
+        Raises:
+            DataNotFoundError: 数据库不存在
+        """
+        return self.parser.get_source_health(self._normalize_date(target_date))
+
+    def get_keyword_hit_series(self, target_date, words: List[str], granularity: str = "hour") -> Dict:
+        """
+        查询关注词在某日的逐时段命中数
+
+        Args:
+            target_date: 目标日期（datetime 或 "YYYY-MM-DD"）
+            words: 关注词列表
+            granularity: "hour" 或 "raw"
+
+        Raises:
+            DataNotFoundError: 数据库不存在
+            InvalidParameterError: words 为空或 granularity 未知
+        """
+        return self.parser.get_keyword_hit_series(
+            self._normalize_date(target_date), words, granularity=granularity
+        )
+
+    def get_last_crawl_time(self, target_date=None) -> Optional[str]:
+        """
+        读取某日最近一次采集时间（"HH-MM" 短格式；库不存在返回 None）
+
+        Args:
+            target_date: 目标日期（datetime 或 "YYYY-MM-DD"），默认今天
+        """
+        return self.parser.get_last_crawl_time(self._normalize_date(target_date))

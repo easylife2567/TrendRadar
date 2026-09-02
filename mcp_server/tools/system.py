@@ -5,6 +5,7 @@
 """
 
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -16,14 +17,16 @@ from ..utils.errors import MCPError, CrawlTaskError
 class SystemManagementTools:
     """系统管理工具类"""
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str = None, data_root: str = None):
         """
         初始化系统管理工具
 
         Args:
             project_root: 项目根目录
+            data_root: 数据根目录覆盖（D9②；注意本类非只读，readonly 恒为 False
+                       以保证 trigger_crawl 写库能力）
         """
-        self.data_service = DataService(project_root)
+        self.data_service = DataService(project_root, readonly=False, data_root=data_root)
         if project_root:
             self.project_root = Path(project_root)
         else:
@@ -68,6 +71,164 @@ class SystemManagementTools:
                     "message": str(e)
                 }
             }
+
+    def get_next_schedule_run(self) -> Dict:
+        """
+        推算下一次调度执行（design/03 §2.1 系统页倒计时数据源）
+
+        三态降级（差异#2：样例库无 period_executions 表，本方法不读执行记录，
+        只基于 timeline 配置推算，因此天然不受旧库缺表影响）：
+        A. schedule.enabled=false → {"enabled": False}
+        B. timeline.yaml 缺失/解析失败/校验失败 → {"reason": "timeline_unavailable"}（HTTP 200，非错误）
+        C. 正常 → 当前时段 + 下一时段推算
+
+        Returns:
+            {"success": True, "summary": {...}, "data": {...}}
+        """
+        import yaml as _yaml
+        import pytz
+        from datetime import timedelta
+        from trendradar.core.scheduler import Scheduler
+
+        try:
+            config = self.data_service.parser.parse_yaml_config()
+        except Exception as e:
+            return {
+                "success": False,
+                "error": {"code": "CONFIGURATION_ERROR", "message": f"读取配置失败: {e}"},
+            }
+
+        schedule_cfg = config.get("schedule") or {}
+
+        # —— A 态：调度未启用 ——
+        if not schedule_cfg.get("enabled", False):
+            return {
+                "success": True,
+                "summary": {"description": "调度未启用（schedule.enabled=false）", "state": "disabled"},
+                "data": {
+                    "enabled": False,
+                    "now": None,
+                    "current_period": None,
+                    "next_period": None,
+                    "last_crawl_time": None,
+                    "description": "定时调度未启用，管线由外部触发或手动执行",
+                },
+            }
+
+        # —— B 态：timeline 不可用 ——
+        try:
+            timeline_path = self.project_root / "config" / "timeline.yaml"
+            with open(timeline_path, "r", encoding="utf-8") as f:
+                timeline_data = _yaml.safe_load(f) or {}
+
+            app_cfg = config.get("app") or {}
+            tz_name = app_cfg.get("timezone") or "Asia/Shanghai"
+            tz = pytz.timezone(tz_name)
+            now = datetime.now(tz)
+
+            scheduler = Scheduler(
+                schedule_config=schedule_cfg,
+                timeline_data=timeline_data,
+                storage_backend=None,  # 只推算时间线，不做 once 去重，无写副作用
+                get_time_func=lambda: now,
+                fallback_report_mode=(config.get("report") or {}).get("mode", "current"),
+            )
+            resolved = scheduler.resolve()
+            timeline = scheduler.timeline
+        except Exception as e:
+            return {
+                "success": True,
+                "summary": {"description": "时间线配置不可用", "state": "timeline_unavailable"},
+                "data": {
+                    "enabled": True,
+                    "now": None,
+                    "current_period": None,
+                    "next_period": None,
+                    "last_crawl_time": None,
+                    "reason": "timeline_unavailable",
+                    "reason_detail": str(e)[:200],
+                    "description": "timeline.yaml 缺失或校验失败，无法推算下一次执行",
+                },
+            }
+
+        # —— C 态：正常推算 ——
+        periods = timeline.get("periods") or {}
+        current_period = None
+        if resolved.period_key:
+            pcfg = periods.get(resolved.period_key) or {}
+            current_period = {
+                "key": resolved.period_key,
+                "name": pcfg.get("name", resolved.period_key),
+                "start": pcfg.get("start"),
+                "end": pcfg.get("end"),
+            }
+
+        next_period = self._find_next_period(
+            now, timeline.get("week_map") or {}, timeline.get("day_plans") or {}, periods
+        )
+
+        last_crawl_time = None
+        try:
+            last_crawl_time = self.data_service.parser.get_last_crawl_time()
+        except Exception:
+            last_crawl_time = None
+
+        return {
+            "success": True,
+            "summary": {
+                "description": "下一次调度执行推算",
+                "state": "ok",
+                "day_plan": resolved.day_plan,
+            },
+            "data": {
+                "enabled": True,
+                "now": now.isoformat(),
+                "timezone": tz_name,
+                "preset": schedule_cfg.get("preset", "always_on"),
+                "day_plan": resolved.day_plan,
+                "current_period": current_period,
+                "next_period": next_period,
+                "last_crawl_time": last_crawl_time,
+                "description": "next_period 为按 timeline 推算的下一时段；实际执行时刻以定时器周期为准",
+            },
+        }
+
+    @staticmethod
+    def _find_next_period(now, week_map: Dict, day_plans: Dict, periods: Dict) -> Optional[Dict]:
+        """
+        从 now 起向后扫描 8 天，找第一个「start 在未来」的时段
+
+        简化说明：跨日时段（start > end，如 22:00-07:00）在后半夜由
+        Scheduler._find_active_period 判定为当前时段（current_period 路径），
+        本方法只负责找「下一个将开始的时段」，不做跨日归属回填。
+        """
+        from datetime import timedelta
+
+        now_hhmm = now.strftime("%H:%M")
+        for offset in range(0, 8):
+            day = now + timedelta(days=offset)
+            plan_key = week_map.get(day.isoweekday())
+            if not plan_key:
+                continue
+            plan = day_plans.get(plan_key) or {}
+            candidates = []
+            for pk in plan.get("periods") or []:
+                pcfg = periods.get(pk)
+                if not pcfg or not pcfg.get("start"):
+                    continue
+                candidates.append((pcfg["start"], pk, pcfg))
+            candidates.sort(key=lambda x: x[0])
+            for start, pk, pcfg in candidates:
+                if offset == 0 and start <= now_hhmm:
+                    continue
+                return {
+                    "key": pk,
+                    "name": pcfg.get("name", pk),
+                    "start": start,
+                    "end": pcfg.get("end"),
+                    "date": day.strftime("%Y-%m-%d"),
+                }
+        return None
 
     def _load_crawl_config(self):
         """加载爬取配置，返回 (config_data, target_platforms_config)"""
