@@ -27,6 +27,11 @@ def get_project_root(request: Request) -> Path:
     return request.app.state.settings.project_root
 
 
+def get_pipeline_runner(request: Request):
+    """手动管线启动器（app 级单例，create_app 时创建）"""
+    return request.app.state.pipeline_runner
+
+
 def validate_date_string(value: str, field: str) -> str:
     r"""日期字符串早拒（design/06 §3：日期一律 ^\d{4}-\d{2}-\d{2}$）"""
     if not DATE_RE.match(value or ""):

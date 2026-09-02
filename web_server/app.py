@@ -77,6 +77,10 @@ def create_app(mode: str = "server", settings: WebSettings | None = None) -> Fas
     )
     app.state.settings = settings
     app.state.project_root = settings.project_root
+    # 手动管线启动器（POST /api/pipeline/run 用；app 级实例保证运行中判定的进程内一致性）
+    from .pipeline import PipelineRunner
+
+    app.state.pipeline_runner = PipelineRunner(settings.project_root)
 
     register_error_handlers(app)
 
