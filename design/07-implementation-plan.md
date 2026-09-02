@@ -142,6 +142,32 @@
    `/api/news/item/{date}/{id}/rank-history` 依赖此字段。
 5. **图表面板砍 Pie/DataZoom/MarkLine**（MVP 仅 Line/Bar）：P3 情感环形图时加回。
 
+### Phase 3 实际偏差回填（2026-09-02）
+
+1. **AI 执行器用 AIClient 直连而非 litellm**：07 原文写 litellm 执行，实际复用
+   仓库既有 `trendradar/ai/client.py`（AIClient，已是依赖且带 fallback 模型链），
+   `ai_runner.run_json` 追加 JSON contract + 「只输出 JSON」指令，
+   `json.loads → json_repair` 兜底，失败 502 AI_EXECUTION_FAILED。
+2. **AI 配置键转换**：AIClient 读扁平大写键，web 侧 YAML 为 `ai:` 小写嵌套，
+   `ai_runner` 复用 `trendradar.core.loader._load_ai_config` 完成键映射 +
+   `AI_MODEL/AI_API_KEY/AI_API_BASE/AI_TIMEOUT` env 覆盖，未配置 → 502。
+3. **429 带标准 Retry-After 头**：`ApiError` 扩展 `headers` 参数，
+   每日上限命中时返回到下一次配额重置（午夜）的秒数；前端 client.js 读取提示。
+4. **结果存储结构**：`ai_sentiment_results` 表列 =
+   (topic, date_start, date_end, platforms, prompt_hash, result_json, model,
+   created_at)，UNIQUE(topic, date_start, date_end, platforms, prompt_hash) 判重；
+   进程缓存 6h（键含 prompt_hash，底层数据变→prompt 变→hash 变→视为新请求）。
+5. **granularity=hour 工具层不支持**：`analyze_topic_trend_unified` 仅支持 day
+   （hour 报 INVALID_PARAMETER），路由白名单保留但前端只用 day；开放 hour 需下沉
+   逐时聚合查询，留 P4。
+6. **predict 预测卡不挂 AI 徽标**：`predict_trending_topics` 为纯统计线性趋势
+   （非 LLM 产出），按 10 §9 可信度协议「抓取事实无 AI 徽标」处理，卡片注明
+   统计口径；07 原文写「AI 徽标」系当时误记。
+7. **情感 run 为同步长请求**（180s 前端超时）而非轮询：AI 调用数十秒级，
+   v1 单进程串行（Semaphore）下轮询无额外收益，POST 直接返回结果。
+8. **体积复核**：P3 加回 Pie+MarkLine 后 TrendChart chunk gzip 175.5KB
+   （+12KB），首屏 index 47.6KB 不变；前端总量超 04 §6 预算如实记录。
+
 ---
 
 ## Phase 3 · 监测中心能力（04 §3.3/3.5/3.6）

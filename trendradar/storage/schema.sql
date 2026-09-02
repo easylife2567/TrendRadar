@@ -120,3 +120,24 @@ CREATE INDEX IF NOT EXISTS idx_rank_history_news ON rank_history(news_item_id);
 -- 时间段执行记录索引
 CREATE INDEX IF NOT EXISTS idx_period_exec_lookup
 ON period_executions(execution_date, period_key, action);
+
+-- ============================================
+-- AI 情感分析结果表（design/03 §6）
+-- web 进程写入（D5「Web 只读」的唯一例外，写入路径收敛在 ai_runner 一处）；
+-- 管线对本表无感知——CREATE IF NOT EXISTS 对新库建表，对已有库无副作用
+-- ============================================
+CREATE TABLE IF NOT EXISTS ai_sentiment_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic TEXT NOT NULL DEFAULT '',            -- 空串 = 全量话题
+    date_start TEXT NOT NULL,
+    date_end   TEXT NOT NULL,
+    platforms  TEXT DEFAULT '',                -- 逗号分隔，空 = 全部
+    prompt_hash TEXT NOT NULL,                 -- 提示词指纹，判重
+    result_json TEXT NOT NULL,                 -- AI 输出（正/负/中比例+代表标题+摘要）
+    model TEXT NOT NULL,                       -- 使用的模型标识
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(topic, date_start, date_end, platforms, prompt_hash)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_sentiment_lookup
+ON ai_sentiment_results(topic, date_end);

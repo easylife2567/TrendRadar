@@ -2,15 +2,29 @@
  * design/10 §2.3：ECharts 按需引入 + 主题从 tokens 生成
  * 主题切换 = dispose + 重新 init（在 TrendChart.vue 内实现），色值不手维护两套
  *
- * 首屏预算（04 §6：gzip < 200KB）：P2 只注册 Line/Bar——PieChart、DataZoom、
- * MarkLine 在 P3（情感环形图、生命周期标注）落地时按需加回，避免无谓的首屏体积
+ * 首屏预算（04 §6）：P2 只注册 Line/Bar（同步首屏不引本模块，TrendChart 为异步
+ * chunk）；P3 加回 Pie（情感环形图）、MarkLine（生命周期标注）——仍在本 chunk 内
  */
 import * as echarts from 'echarts/core'
-import { LineChart, BarChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+import { LineChart, BarChart, PieChart } from 'echarts/charts'
+import {
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  MarkLineComponent,
+} from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 
-echarts.use([LineChart, BarChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
+echarts.use([
+  LineChart,
+  BarChart,
+  PieChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  MarkLineComponent,
+  CanvasRenderer,
+])
 
 /** 分类色板（10 §2.3：8 色暗底校准） */
 export const CHART_PALETTE = [

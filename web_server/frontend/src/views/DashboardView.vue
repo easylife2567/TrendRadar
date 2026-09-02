@@ -1,8 +1,10 @@
 <script setup>
 /*
  * 仪表盘 /dashboard（design/04 §3.1，US-1）
- * viral 预警条 → 四指标卡 → 关注词曲线 → TOP 话题 + 源灯板 → predict 占位
- * 数据：status / trending / viral / health/sources / news-date / keyword-series
+ * viral 预警条 → 四指标卡 → 关注词曲线 → TOP 话题 + 源灯板 + predict 预测卡
+ * 数据：status / trending / viral / health/sources / news-date / keyword-series / predict
+ * 注：predict 为统计趋势预测（tools 层线性增长率），非 AI 产出 → 不挂 AI 徽标
+ * （design/10 §9 可信度协议；计划原文假设其带 AI 徽标，记为 P3 偏差）
  */
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -26,6 +28,7 @@ const viral = ref([])
 const health = ref(null)
 const todayCount = ref(null)
 const series = ref(null) // {buckets, series:[{word, counts}]}
+const predicted = ref([])
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -37,6 +40,7 @@ async function fetchOne() {
     api.get('/api/analytics/viral', { silent: true }).then((d) => (viral.value = d || [])).catch(() => {}),
     api.get('/api/system/health/sources', { silent: true }).then((d) => (health.value = d)).catch(() => {}),
     api.get(`/api/news/date/${today}?limit=1000`, { silent: true }).then((d) => (todayCount.value = d?.length ?? null)).catch(() => {}),
+    api.get('/api/analytics/predict?lookahead_hours=6', { silent: true }).then((d) => (predicted.value = d || [])).catch(() => {}),
     keywordSeriesJob(),
   ]
   await Promise.all(jobs)
@@ -178,9 +182,19 @@ const topics = computed(() => (trending.value?.topics || []).slice(0, 10))
             <SourceHealthGrid :platforms="health?.platforms || {}" />
           </div>
 
-          <div class="card section ai-container">
-            <h2>{{ t('dashboard.predictPlaceholder') }}</h2>
-            <p class="muted">{{ t('dashboard.predictComing') }}</p>
+          <!-- predict 预测卡：统计趋势预测，非 AI 产出（不挂徽标，10 §9） -->
+          <div class="card section">
+            <h2>{{ t('dashboard.predictTitle') }}</h2>
+            <p v-if="!predicted.length" class="muted">{{ t('dashboard.predictEmpty') }}</p>
+            <ol v-else class="topic-list">
+              <li v-for="p in predicted.slice(0, 5)" :key="p.keyword">
+                <button class="topic-row" @click="router.push(`/topics/${encodeURIComponent(p.keyword)}`)">
+                  <span class="kw">{{ p.keyword }}</span>
+                  <span class="mono-num freq">+{{ p.growth_rate }}%</span>
+                </button>
+              </li>
+            </ol>
+            <p class="micro-label">{{ t('dashboard.predictNote') }}</p>
           </div>
         </div>
       </div>
@@ -339,11 +353,6 @@ const topics = computed(() => (trending.value?.topics || []).slice(0, 10))
 .freq {
   color: var(--text-secondary);
   font-size: var(--text-xs);
-}
-
-/* 10 §9：AI 容器左缘 2px info 竖线 */
-.ai-container {
-  border-left: 2px solid var(--sem-info);
 }
 
 .muted {

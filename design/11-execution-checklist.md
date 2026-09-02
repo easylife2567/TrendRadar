@@ -54,11 +54,23 @@
 
 ## Phase 3 · P3 监测中心（Step 9）
 
-- [ ] ai_runner（键转换表、max_daily=50、json_repair 兜底）
-- [ ] api/sentiment 三端点（Semaphore(1) 串行、429+Retry-After）
-- [ ] SentimentStore 唯一写路径（BEGIN IMMEDIATE + INSERT OR IGNORE）+ schema.sql 追加 ai_sentiment_results
-- [ ] 话题追踪 / 情感分析 / 对比页 / 系统页（倒计时+手动按钮）
-- [ ] AI 可信度视觉协议（AiBadge + 左缘竖线 + 时间戳 + 模型名）
+| 项 | 状态 | 验证口径 |
+|---|---|---|
+| ai_runner | ✅ | 复用 `_load_ai_config` 键转换 + AIClient；run_json JSON contract + json_repair 兜底；每日 50 上限（TRENDRADAR_SENTIMENT_DAILY_LIMIT 可调） |
+| api/sentiment 三端点 | ✅ | prompt/run/results；Semaphore(1) 串行 + 快路径双重检查（同参并发只跑一次 AI）；429+Retry-After（ApiError 扩展 headers） |
+| SentimentStore 唯一写路径 | ✅ | BEGIN IMMEDIATE + INSERT OR IGNORE；schema.sql 追加 ai_sentiment_results（UNIQUE 五元组判重）；落库锚定 date_end 当日库 |
+| 话题追踪页 | ✅ | TopicView：热度面积图+markLine 峰值+生命周期四指标+平台环形+相关标题；URL 同步 /topics/:keyword 直链 |
+| 情感分析页 | ✅ | SentimentView：run 长超时 180s、环形（语义色）+平台堆叠+代表标题+AiBadge+历史回看 |
+| 对比页 | ✅ | CompareView：时期对比三型（电梯数/升降榜/平台活跃柱）+新增消失关键词+平台关注度 |
+| 系统页 | ✅ | SystemView：schedule 三态（disabled/timeline_unavailable/正常倒计时含跨日）+status/dates+手动抓取/管线（🔑+confirm 二次确认+409 提示）+源灯板 |
+| 仪表盘 predict | ✅ | 真实数据卡（趋势统计口径标注，**不挂 AI 徽标**——07 偏差#6） |
+| charts 加回 Pie/MarkLine | ✅ | TrendChart chunk gzip 175.5KB（异步）；首屏 47.6KB 不变 |
+| 路由接线 + i18n | ✅ | 四路由指向真实视图；PlaceholderView 删除；zh-CN/en 补 topics./sentiment./compare./system. 全键 |
+| 回归 | ✅ | 后端探针 20/20（prompt/run/缓存/429/落库/502/无误建库）；smoke --fixture 24/24；SPA 直链 /topics /sentiment /compare /system 200、未知路径 404 |
+
+**tag `web-v0.3`**（P3 代码侧完成点）
+
+浏览器侧手测（实机）：Phase 3 验收四项（特斯拉一屏可答 / 缓存命中+并发去重+429 / viral 条可点进 / 周环比交叉验证）。
 
 ## Phase 4 · P4 产品化（Step 10，按价值插空）
 

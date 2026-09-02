@@ -1,6 +1,5 @@
 /*
  * design/04 §2 路由表：路由级动态 import 分包（8 页各一 chunk，04 §6 性能预算）
- * P3 四页（topics/sentiment/compare/system）路由存在但为占位（Step 9 落地）
  */
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -18,7 +17,7 @@ export const router = createRouter({
     },
     {
       path: '/topics/:keyword?',
-      component: () => import('../views/PlaceholderView.vue'),
+      component: () => import('../views/TopicView.vue'),
     },
     {
       path: '/search',
@@ -26,11 +25,11 @@ export const router = createRouter({
     },
     {
       path: '/sentiment',
-      component: () => import('../views/PlaceholderView.vue'),
+      component: () => import('../views/SentimentView.vue'),
     },
     {
       path: '/compare',
-      component: () => import('../views/PlaceholderView.vue'),
+      component: () => import('../views/CompareView.vue'),
     },
     {
       path: '/reports',
@@ -38,7 +37,7 @@ export const router = createRouter({
     },
     {
       path: '/system',
-      component: () => import('../views/PlaceholderView.vue'),
+      component: () => import('../views/SystemView.vue'),
     },
     { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
   ],

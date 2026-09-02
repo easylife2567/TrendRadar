@@ -31,14 +31,15 @@ logger = logging.getLogger("trendradar.web")
 
 
 class ApiError(Exception):
-    """Web 层业务错误（携带 HTTP 状态码与契约错误码）"""
+    """Web 层业务错误（携带 HTTP 状态码与契约错误码；headers 供 429 Retry-After 等）"""
 
-    def __init__(self, status_code: int, code: str, message: str, detail: Any = None):
+    def __init__(self, status_code: int, code: str, message: str, detail: Any = None, headers: dict | None = None):
         super().__init__(message)
         self.status_code = status_code
         self.code = code
         self.message = message
         self.detail = detail
+        self.headers = headers
 
 
 # tools 层错误码 → (HTTP 状态码, 契约错误码)
@@ -75,7 +76,11 @@ def register_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(ApiError)
     async def handle_api_error(request: Request, exc: ApiError):
-        return JSONResponse(status_code=exc.status_code, content=_error_body(exc.code, exc.message, exc.detail))
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=_error_body(exc.code, exc.message, exc.detail),
+            headers=exc.headers,
+        )
 
     @app.exception_handler(MCPError)
     async def handle_mcp_error(request: Request, exc: MCPError):

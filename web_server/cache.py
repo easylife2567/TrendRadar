@@ -47,6 +47,7 @@ DEFAULT_TTLS: dict[str, int] = {
     # reports（§2.6）
     "reports.list": 300,
     # sentiment（§2.4）
+    "sentiment.prompt": 300,
     "sentiment.results": 300,
 }
 
