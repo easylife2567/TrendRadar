@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+.pytest_cache/
+
+# Node（前端源码在 web_server/frontend/；构建产物 web_server/static/ 需提交 git，勿在此排除）
+node_modules/
+
+# 环境变量与密钥（API key 走环境变量/web.env，不入库）
+.env
+.env.*
+!.env.example
+
+# 运行时数据：新增产物不再入库（已追踪的历史样例库 output/news/2025-12-*.db 不受影响）
+output/
+
+# Cloudflare Wrangler 本地缓存
+.wrangler/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+*~
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
