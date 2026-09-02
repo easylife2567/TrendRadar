@@ -1,0 +1,21 @@
+# TrendRadar MCP 服务单元（可选，模板）——供 Cherry Studio 等 MCP 客户端远程连接
+# 设计依据：design/05 §3.5
+[Unit]
+Description=TrendRadar MCP Server (HTTP transport)
+After=network.target
+
+[Service]
+Type=simple
+User=@RUN_USER@
+WorkingDirectory=@PROJECT_ROOT@
+ExecStart=@PROJECT_ROOT@/.venv/bin/python -m mcp_server.server --transport http --host 127.0.0.1 --port @MCP_PORT@
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=@PROJECT_ROOT@/output
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+# TrendRadar 管线调度 timer（无路径变量，直接安装）
+# 设计依据：design/05 §3.2
+[Unit]
+Description=Trigger TrendRadar pipeline every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+# 避开整点，对上游 newsnow 友好
+RandomizedDelaySec=120
+# 错过的（如 Windows 更新重启）补跑一次
+Persistent=true
+
+[Install]
+WantedBy=timers.target

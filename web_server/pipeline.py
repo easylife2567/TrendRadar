@@ -64,7 +64,9 @@ class PipelineRunner:
     def __init__(self, project_root: Path, min_interval: int = 60, python: str | None = None):
         self.project_root = Path(project_root)
         self.min_interval = min_interval
-        self._python = python or str(Path(sys.executable).resolve())
+        # 不可对 sys.executable 做 resolve()：venv 的 python 是指向基础解释器的符号链接，
+        # resolve 后脱离 venv site-packages（表现为管线启动即 ModuleNotFoundError）
+        self._python = python or sys.executable
         self._lock = threading.Lock()
         self._last_launch: tuple[float, PipelineLaunch] | None = None
 

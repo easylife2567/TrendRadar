@@ -1,0 +1,28 @@
+# TrendRadar Web 服务单元（模板，由 install.sh 渲染 @VAR@ 占位符）
+# 设计依据：design/05 §3.1、design/06 §3（加固）
+[Unit]
+Description=TrendRadar Web Server (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+User=@RUN_USER@
+WorkingDirectory=@PROJECT_ROOT@
+# 单进程（v1 部署声明）：限流/AI 计数护栏在进程内存，多 worker 会绕过
+ExecStart=@PROJECT_ROOT@/.venv/bin/python -m web_server --host 127.0.0.1 --port @WEB_PORT@
+Restart=always
+RestartSec=5
+
+# 密钥与环境（TRENDRADAR_API_KEY / TRENDRADAR_ENV=prod 等）
+# install.sh 保证该文件存在（缺失会启动失败——fail closed）
+EnvironmentFile=/etc/trendradar/web.env
+
+# 加固（design/06 §3）
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=@PROJECT_ROOT@/output
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

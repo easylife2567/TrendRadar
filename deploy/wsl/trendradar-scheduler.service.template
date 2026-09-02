@@ -1,0 +1,18 @@
+# TrendRadar 管线 one-shot 单元（模板）——由 trendradar-scheduler.timer 周期触发
+# 设计依据：design/05 §3.2（D6：管线自身的 schedule 决定本次是否实际工作）
+[Unit]
+Description=TrendRadar pipeline run (one-shot)
+After=network.target
+
+[Service]
+Type=oneshot
+User=@RUN_USER@
+WorkingDirectory=@PROJECT_ROOT@
+ExecStart=@PROJECT_ROOT@/.venv/bin/python -m trendradar
+# 管线在非活跃时段空转退出，成本可忽略
+EnvironmentFile=/etc/trendradar/web.env
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=@PROJECT_ROOT@/output
+PrivateTmp=true
+ProtectHome=true

@@ -1,0 +1,15 @@
+# cloudflared 隧道配置参考（design/02 D8、design/05 §3.3）
+# 安装位置：/etc/cloudflared/config.yml
+# 前置：cloudflared tunnel create <名> 产生的凭证放 /etc/cloudflared/<UUID>.json
+tunnel: <TUNNEL-UUID>
+credentials-file: /etc/cloudflared/<TUNNEL-UUID>.json
+
+ingress:
+  # MCP（可选）：子域或路径路由到 MCP HTTP 端口
+  - hostname: mcp.example.com
+    service: http://127.0.0.1:3333
+  # 其余全部走 Web（含 /api 与静态前端）
+  - hostname: radar.example.com
+    service: http://127.0.0.1:8080
+  # 兜底：必须放最后
+  - service: http_status:404
