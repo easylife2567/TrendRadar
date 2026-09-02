@@ -391,6 +391,80 @@ class DataQueryTools:
             }
 
     # ========================================
+    # 系统页数据源（design/03 §2.1 dates / health/sources）
+    # ========================================
+
+    def get_available_dates(self, db_type: str = "news") -> Dict:
+        """
+        列出本地可用的数据日期
+
+        走 ParserService（支持 data_root 覆盖，D9②），
+        语义对齐 StorageSyncTools.list_available_dates(source="local") 的 local 段。
+
+        Args:
+            db_type: 数据库类型 ("news" 或 "rss")
+
+        Returns:
+            {"success": True, "summary": {...}, "data": {"dates", "count", "earliest", "latest"}}
+        """
+        try:
+            dates = self.data_service.parser.get_available_dates(db_type)
+            return {
+                "success": True,
+                "summary": {
+                    "description": f"{db_type} 库可用日期",
+                    "total": len(dates),
+                },
+                "data": {
+                    "db_type": db_type,
+                    "dates": dates,
+                    "count": len(dates),
+                    "earliest": dates[-1] if dates else None,
+                    "latest": dates[0] if dates else None,
+                },
+            }
+        except MCPError as e:
+            return {"success": False, "error": e.to_dict()}
+        except Exception as e:
+            return {"success": False, "error": {"code": "INTERNAL_ERROR", "message": str(e)}}
+
+    def get_source_health(self, date: Union[str, Dict, None] = None) -> Dict:
+        """
+        查询某日各采集源的成功/失败状况（crawl_source_status）
+
+        Args:
+            date: 日期（"YYYY-MM-DD" / "今天" 等），默认今天
+
+        Returns:
+            {"success": True, "summary": {...}, "data": {"date", "crawls", "platforms", "summary"}}
+
+        Raises（内部捕获为错误信封）:
+            DataNotFoundError: 当日无库
+        """
+        try:
+            if date is None:
+                date = "今天"
+            date = normalize_date_range(date)
+            if isinstance(date, dict):
+                date = date.get("start", "今天")
+            target_date = validate_date_query(date)
+
+            result = self.data_service.get_source_health(target_date)
+            return {
+                "success": True,
+                "summary": {
+                    "description": f"采集源健康度（{target_date.strftime('%Y-%m-%d')}）",
+                    "date": target_date.strftime("%Y-%m-%d"),
+                    "failed_checks": result.get("summary", {}).get("failed_checks", 0),
+                },
+                "data": result,
+            }
+        except MCPError as e:
+            return {"success": False, "error": e.to_dict()}
+        except Exception as e:
+            return {"success": False, "error": {"code": "INTERNAL_ERROR", "message": str(e)}}
+
+    # ========================================
     # RSS 数据查询方法
     # ========================================
 
