@@ -32,15 +32,23 @@
 - [ ] Windows 任务计划 + 电源设置（防睡眠）
 - [ ] 备份演练：`bash deploy/wsl/backup.sh` → 实际恢复验证一次
 
-## Phase 2 · P2 MVP 前端（Step 8）
+## Phase 2 · P2 MVP 前端（Step 8）——代码侧已完成 ✅
 
-- [ ] Vite+Vue3 脚手架（build.outDir=../static、dev 代理 /api）
-- [ ] 路由分包 + api/client.js + tokens.css + useI18n + usePolling
-- [ ] 布局壳（双分组侧导航 + 顶栏）
-- [ ] 热榜页先行 → 仪表盘（含 P1 的 get_keyword_hit_series 曲线）→ 检索 → 报告（iframe）
-- [ ] ECharts 按需引入；主题切换 = dispose+init
-- [ ] 首屏 gzip JS < 200KB；移动端断点
-- [ ] `npm run build` → static/ 入库；catch-all 在 API 路由之后
+| 项 | 状态 | 说明 |
+|---|---|---|
+| Vite+Vue3 脚手架 | ✅ | build.outDir=../static（emptyOutDir）、terser passes:2、dev 代理 /api→8080 |
+| 路由分包 + client + tokens + i18n + polling | ✅ | 8 路由动态 import；zh-CN/en 双字典；usePolling（visibilitychange/退避） |
+| 布局壳 | ✅ | 双分组侧导航（工作台组"即将上线"）+ 顶栏（搜索/主题/语言）+ 移动底部 tab |
+| 热榜页 | ✅ | PlatformTabs/NewsItem（rank 1-3 红 4-10 橙/NEW=count 1）/RankHistoryDrawer 联动 rank-history |
+| 仪表盘 | ✅ | 四指标卡（todayCount/keywordHits/platformStats/freshness）+ keyword-series 曲线 + TOP 话题 + 源灯板；viral 预警条 |
+| 检索 / 报告 | ✅ | search 三模式 + 日期/平台聚合侧栏；reports 日期网格 + iframe + 下载 |
+| ECharts 按需 | ✅ | echarts/core + Line/Bar（Pie/DataZoom/MarkLine P3 加回）；异步 chunk 163.6KB |
+| 主题切换图表重建 | ✅ | TrendChart MutationObserver 监听 data-theme → dispose+init |
+| 首屏 gzip JS | ✅（口径） | 同步关键路径 ≈48KB 达标；总量 ≈211KB 超 5.5%（07 Phase 2 偏差#1 如实回填） |
+| static/ 入库 + catch-all | ✅ | mount /assets + catch-all 在 API 路由后；**白名单 fallback**（拒 `..` 段，仅 8 前端路由+根路径回 index.html，其余 JSON 404——防穿越探测被吞成 200） |
+| 回归 | ✅ | smoke --fixture 24/24 全绿（穿越用例加 --path-as-is）；/ /dashboard /system 200、规范化穿越 404、未知路径 404 |
+
+浏览器侧手测（无法本机自动化，留给实机）：亮暗/中英全页切换、主题切换图表重建、手机 4G 首屏 <3s、三个真实任务。
 
 ## Phase 3 · P3 监测中心（Step 9）
 

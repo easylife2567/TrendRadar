@@ -31,6 +31,7 @@ DEFAULT_TTLS: dict[str, int] = {
     "news.search": 300,
     "news.rank_history": 300,
     "topics.trending": 120,
+    "topics.keyword_series": 120,
     # analytics（§2.3，慢端点更长）
     "analytics.topic_trend": 600,
     "analytics.insights": 600,

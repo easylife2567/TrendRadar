@@ -1,0 +1,110 @@
+{
+  "app": {
+    "title": "TrendRadar Monitoring Center",
+    "groupMonitor": "Monitoring",
+    "groupWorkbench": "Workbench",
+    "comingSoon": "Coming soon"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "live": "Live Rankings",
+    "topics": "Topic Tracking",
+    "search": "Search History",
+    "sentiment": "Sentiment",
+    "compare": "Comparison",
+    "reports": "Reports",
+    "system": "System Health"
+  },
+  "topbar": {
+    "searchPlaceholder": "Search keyword…",
+    "theme": "Theme",
+    "language": "Language",
+    "apikey": "API Key",
+    "stale": "Data may be stale, retrying…"
+  },
+  "range": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "last7": "Last 7 days",
+    "last30": "Last 30 days",
+    "lastWeek": "Last week",
+    "thisWeek": "This week",
+    "lastMonth": "Last month",
+    "thisMonth": "This month"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "newsCount": "Today's items",
+    "keywordHits": "Keyword hits",
+    "platformsOnline": "Platforms online",
+    "freshness": "Data freshness",
+    "keywordCurve": "Keyword hits today",
+    "topTopics": "Top topics",
+    "sourceHealth": "Source health",
+    "predictPlaceholder": "Trend prediction (AI)",
+    "predictComing": "Coming in P3: 7-day trend predictions",
+    "viralAlert": "Viral alert",
+    "vsYesterday": "vs yesterday",
+    "items": "items",
+    "hits": "hits",
+    "online": "{ok}/{total} online",
+    "lastCrawl": "Last crawl {time}"
+  },
+  "live": {
+    "title": "Live Rankings",
+    "allPlatforms": "All",
+    "grouped": "Grouped",
+    "flat": "Flat",
+    "newBadge": "NEW",
+    "countSuffix": " appearances",
+    "empty": "No ranking data for today",
+    "emptyHint": "Run the pipeline first, or check another date"
+  },
+  "drawer": {
+    "rankHistory": "Rank history",
+    "titleChanges": "Title changes",
+    "noChanges": "No title changes recorded",
+    "openSource": "Open source",
+    "crawlStats": "{count} appearances · first {first} · last {last}"
+  },
+  "search": {
+    "title": "Search History",
+    "queryPlaceholder": "Type a keyword…",
+    "modeKeyword": "Keyword",
+    "modeFuzzy": "Fuzzy",
+    "modeEntity": "Entity",
+    "platform": "Platform",
+    "allPlatforms": "All platforms",
+    "submit": "Search",
+    "results": "{n} results",
+    "dateDist": "Hits by date",
+    "platformDist": "By platform",
+    "empty": "No results",
+    "emptyHint": "Try another keyword or widen the date range"
+  },
+  "reports": {
+    "title": "Reports",
+    "empty": "No reports generated yet",
+    "emptyHint": "HTML reports appear here after the pipeline runs",
+    "files": "{n} files",
+    "openLatest": "Latest report",
+    "viewInIframe": "Preview below"
+  },
+  "placeholder": {
+    "title": "Coming soon",
+    "hint": "This page is part of the P3 monitoring capabilities, planned for Web v0.2"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "close": "Close",
+    "all": "All"
+  },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo": "{n} min ago",
+    "hoursAgo": "{n} h ago",
+    "daysAgo": "{n} d ago"
+  }
+}

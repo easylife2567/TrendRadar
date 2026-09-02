@@ -101,6 +101,7 @@ class DataService:
                 rank = info["ranks"][0] if info["ranks"] else 0
 
                 news_item = {
+                    "id": info.get("id"),
                     "title": title,
                     "platform": platform_id,
                     "platform_name": platform_name,
@@ -179,6 +180,7 @@ class DataService:
                 avg_rank = sum(info["ranks"]) / len(info["ranks"]) if info["ranks"] else 0
 
                 news_item = {
+                    "id": info.get("id"),
                     "title": title,
                     "platform": platform_id,
                     "platform_name": platform_name,

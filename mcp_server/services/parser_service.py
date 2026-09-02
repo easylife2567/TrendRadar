@@ -255,6 +255,7 @@ class ParserService:
             ranks = rank_history_map.get(news_id, [row['rank']])
 
             all_titles[platform_id][title] = {
+                "id": news_id,
                 "ranks": ranks,
                 "url": row['url'] or "",
                 "mobileUrl": row['mobile_url'] or "",

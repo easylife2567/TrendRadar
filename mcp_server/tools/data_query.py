@@ -464,6 +464,52 @@ class DataQueryTools:
         except Exception as e:
             return {"success": False, "error": {"code": "INTERNAL_ERROR", "message": str(e)}}
 
+    def get_keyword_hit_series(
+        self,
+        date: Union[str, Dict, None] = None,
+        words: Optional[List[str]] = None,
+        granularity: str = "hour",
+    ) -> Dict:
+        """
+        查询关注词在某日的逐时段命中数（仪表盘「关注词今日热度曲线」数据源，design/03 §8 清单外）
+
+        Args:
+            date: 日期（"YYYY-MM-DD" / "今天" 等），默认今天
+            words: 关注词列表（1–50 个）
+            granularity: "hour" 或 "raw"（按爬取批次）
+
+        Returns:
+            {"success": True, "summary": {...},
+             "data": {"date", "granularity", "buckets", "series": [{"word", "counts"}]}}
+
+        Raises（内部捕获为错误信封）:
+            DataNotFoundError: 当日无库
+            InvalidParameterError: words 为空或 granularity 未知
+        """
+        try:
+            if date is None:
+                date = "今天"
+            date = normalize_date_range(date)
+            if isinstance(date, dict):
+                date = date.get("start", "今天")
+            target_date = validate_date_query(date)
+
+            result = self.data_service.get_keyword_hit_series(
+                target_date, words or [], granularity=granularity
+            )
+            return {
+                "success": True,
+                "summary": {
+                    "description": f"关注词逐时段命中数（{target_date.strftime('%Y-%m-%d')}，{granularity}）",
+                    "words": len(result.get("series", [])),
+                },
+                "data": result,
+            }
+        except MCPError as e:
+            return {"success": False, "error": e.to_dict()}
+        except Exception as e:
+            return {"success": False, "error": {"code": "INTERNAL_ERROR", "message": str(e)}}
+
     # ========================================
     # RSS 数据查询方法
     # ========================================

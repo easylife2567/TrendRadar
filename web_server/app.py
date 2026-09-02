@@ -21,7 +21,7 @@ from fastapi import FastAPI
 from . import __version__
 from .auth import AuthMiddleware, load_api_key
 from .cache import start_cache_cleanup, stop_cache_cleanup
-from .errors import register_error_handlers
+from .errors import ApiError, register_error_handlers
 from .logging_mw import AccessLogMiddleware
 from .ratelimit import ANALYTICS_PER_MIN, DEFAULT_PER_MIN, RateLimitMiddleware
 from .settings import WebSettings, load_web_settings
@@ -89,12 +89,46 @@ def create_app(mode: str = "server", settings: WebSettings | None = None) -> Fas
 
     app.include_router(api_router, prefix="/api")
 
-    # ---- 根路径占位页（P2 前端落地后由 StaticFiles 挂载取代） ----
-    @app.get("/", include_in_schema=False)
-    def index():
-        from fastapi.responses import HTMLResponse
+    # ---- 前端静态托管（P2，design/04 §7）：web_server/static/ 由 frontend 构建产出 ----
+    # catch-all 必须在全部 /api 路由注册之后；内部先拒 api/docs 等前缀，
+    # 否则未匹配的 API 路由会被 SPA fallback 吃掉返回 HTML 200（design/07 验收项）
+    static_dir = Path(__file__).parent / "static"
+    if (static_dir / "index.html").is_file():
+        from fastapi.responses import FileResponse
+        from fastapi.staticfiles import StaticFiles
 
-        return HTMLResponse(_PLACEHOLDER_HTML)
+        app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="assets")
+
+        # SPA 前端路由白名单：fallback 只服务已知页面，不给任意路径回 200 HTML
+        # （否则 /etc/passwd/html 这类穿越探测路径会被吞成 200，design/06 §8）
+        _SPA_ROUTES = {
+            "dashboard", "live", "topics", "search",
+            "sentiment", "compare", "reports", "system",
+        }
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        def spa(full_path: str):
+            from fastapi.responses import FileResponse
+
+            if full_path.startswith(("api/", "docs", "redoc", "openapi.json")):
+                raise ApiError(404, "NOT_FOUND", "Not Found")
+            if ".." in full_path.split("/") or full_path == "favicon.ico":
+                raise ApiError(404, "NOT_FOUND", "Not Found")
+            candidate = static_dir / full_path
+            if full_path and candidate.is_file():
+                return FileResponse(candidate)
+            # SPA history 路由 fallback：白名单页面 + 根路径
+            if not full_path or full_path.split("/", 1)[0] in _SPA_ROUTES:
+                return FileResponse(static_dir / "index.html")
+            raise ApiError(404, "NOT_FOUND", "Not Found")
+
+    else:
+
+        @app.get("/", include_in_schema=False)
+        def index():
+            from fastapi.responses import HTMLResponse
+
+            return HTMLResponse(_PLACEHOLDER_HTML)
 
     # ---- 中间件栈：注册顺序即执行顺序的倒序，勿调整（见模块 docstring） ----
     app.add_middleware(

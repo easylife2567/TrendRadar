@@ -238,3 +238,36 @@ def aggregate(
         "analytics.aggregate", params, ttl_for(settings, "analytics.aggregate"), produce
     )
     return ok(data, cached=cached)
+
+
+@router.get("/topics/keyword-series", summary="关注词逐时段命中数（仪表盘热度曲线数据源）")
+def keyword_series(
+    words: str = Query(..., min_length=1, description="逗号分隔关注词，1–50 个"),
+    date: str | None = Query(None, description="YYYY-MM-DD，默认今天"),
+    granularity: str = Query("hour", description="hour|raw"),
+    settings: WebSettings = Depends(get_settings),
+):
+    if granularity not in ("hour", "raw"):
+        raise ApiError(400, "BAD_REQUEST", "granularity 仅支持 hour|raw")
+    word_list = [w.strip() for w in words.split(",") if w.strip()]
+    if not word_list:
+        raise ApiError(400, "BAD_REQUEST", "words 不能为空")
+    if len(word_list) > 50:
+        raise ApiError(400, "BAD_REQUEST", "words 最多 50 个")
+    target_date = date or None
+    if target_date is not None and not _DATE_ONLY_RE.match(target_date):
+        raise ApiError(400, "BAD_REQUEST", "date 须为 YYYY-MM-DD")
+    tools = get_read_tools(str(settings.project_root), settings.data_root)
+
+    def produce():
+        return unwrap_tool_result(
+            tools["data_query"].get_keyword_hit_series(
+                date=target_date, words=word_list, granularity=granularity
+            )
+        )
+
+    params = {"date": target_date, "words": word_list, "granularity": granularity}
+    data, cached = cached_call(
+        "topics.keyword_series", params, ttl_for(settings, "topics.keyword_series"), produce
+    )
+    return ok(data, cached=cached)

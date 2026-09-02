@@ -124,6 +124,24 @@
 - [ ] 能完成三个真实任务：看今日热点 / 翻上周三榜单 / 搜一个历史关键词
 - [ ] 亮暗/中英切换全页面无漏译、无样式破碎
 
+### Phase 2 实际偏差回填（2026-09-02）
+
+1. **首屏 JS 预算口径**：同步关键路径 gzip ≈48KB（index 44.4 + Dashboard 2.5）
+   达标；ECharts chunk 163.6KB 为异步加载（`defineAsyncComponent`），不阻塞首屏。
+   构建总量 ≈211KB 超预算 5.5%——04 §6 预算按「首屏」口径达成，总量偏差如实记录，
+   P3 加回 Pie/DataZoom/MarkLine 后复核（Tree-shaking 后 Pie 仅 +3KB 左右）。
+2. **SPA fallback 收紧为前端路由白名单**：泛 catch-all 会把穿越探测路径
+   （curl 规范化后的 `/etc/passwd/html`）吞成 200 HTML（06 §8 回归）。
+   改为：拒 `..` 段 + 仅 `dashboard/live/topics/search/sentiment/compare/reports/system`
+   八路由与根路径回 index.html，其余一律 JSON 404。
+3. **新增 `GET /api/topics/keyword-series`**（03 §8 清单外，计划差异#11 下沉）：
+   关注词逐小时热度时序，`ParserService.get_keyword_hit_series` +
+   `DataQueryTools` 包装，TTL 120s。
+4. **列表端点透传 news id**：`parser_service._read_news_from_sqlite` 与
+   data_service 两投影补 `"id"`，RankHistoryDrawer 联动
+   `/api/news/item/{date}/{id}/rank-history` 依赖此字段。
+5. **图表面板砍 Pie/DataZoom/MarkLine**（MVP 仅 Line/Bar）：P3 情感环形图时加回。
+
 ---
 
 ## Phase 3 · 监测中心能力（04 §3.3/3.5/3.6）

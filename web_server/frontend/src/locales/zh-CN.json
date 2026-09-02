@@ -1,0 +1,110 @@
+{
+  "app": {
+    "title": "TrendRadar 舆情监测中心",
+    "groupMonitor": "监测中心",
+    "groupWorkbench": "工作台",
+    "comingSoon": "即将上线"
+  },
+  "nav": {
+    "dashboard": "仪表盘",
+    "live": "实时热榜",
+    "topics": "话题追踪",
+    "search": "全历史检索",
+    "sentiment": "情感分析",
+    "compare": "对比分析",
+    "reports": "报告归档",
+    "system": "系统与健康"
+  },
+  "topbar": {
+    "searchPlaceholder": "搜索关键词…",
+    "theme": "主题",
+    "language": "语言",
+    "apikey": "API Key",
+    "stale": "数据可能过期，重试中…"
+  },
+  "range": {
+    "today": "今天",
+    "yesterday": "昨天",
+    "last7": "最近7天",
+    "last30": "最近30天",
+    "lastWeek": "上周",
+    "thisWeek": "本周",
+    "lastMonth": "上月",
+    "thisMonth": "本月"
+  },
+  "dashboard": {
+    "title": "仪表盘",
+    "newsCount": "今日热榜条目",
+    "keywordHits": "关注词命中",
+    "platformsOnline": "覆盖平台",
+    "freshness": "数据新鲜度",
+    "keywordCurve": "关注词今日热度曲线",
+    "topTopics": "TOP 话题榜",
+    "sourceHealth": "源健康灯板",
+    "predictPlaceholder": "趋势预测（AI）",
+    "predictComing": "P3 上线：近 7 日趋势预测候选",
+    "viralAlert": "爆火预警",
+    "vsYesterday": "较昨日",
+    "items": "条",
+    "hits": "条命中",
+    "online": "{ok}/{total} 在线",
+    "lastCrawl": "最近采集 {time}"
+  },
+  "live": {
+    "title": "实时热榜",
+    "allPlatforms": "全部",
+    "grouped": "分组",
+    "flat": "平铺",
+    "newBadge": "NEW",
+    "countSuffix": "次在榜",
+    "empty": "今日暂无热榜数据",
+    "emptyHint": "先运行一次数据管线，或查看其他日期"
+  },
+  "drawer": {
+    "rankHistory": "排名历史",
+    "titleChanges": "标题改动",
+    "noChanges": "无标题改动记录",
+    "openSource": "查看原文",
+    "crawlStats": "在榜 {count} 次 · 首次 {first} · 最近 {last}"
+  },
+  "search": {
+    "title": "全历史检索",
+    "queryPlaceholder": "输入关键词…",
+    "modeKeyword": "关键词",
+    "modeFuzzy": "模糊",
+    "modeEntity": "实体",
+    "platform": "平台",
+    "allPlatforms": "全部平台",
+    "submit": "检索",
+    "results": "{n} 条结果",
+    "dateDist": "命中日期分布",
+    "platformDist": "平台分布",
+    "empty": "没有命中结果",
+    "emptyHint": "换个关键词、放宽日期范围试试"
+  },
+  "reports": {
+    "title": "报告归档",
+    "empty": "还没有生成的报告",
+    "emptyHint": "管线运行后会产出 HTML 报告，届时可在此查看",
+    "files": "{n} 份",
+    "openLatest": "最新报告",
+    "viewInIframe": "在下方预览"
+  },
+  "placeholder": {
+    "title": "该模块即将上线",
+    "hint": "此页面属于 P3 监测中心能力，计划在 Web 端 v0.2 提供"
+  },
+  "common": {
+    "loading": "加载中…",
+    "error": "出错了",
+    "retry": "重试",
+    "close": "关闭",
+    "all": "全部"
+  },
+  "time": {
+    "justNow": "刚刚",
+    "minutesAgo": "{n} 分钟前",
+    "hoursAgo": "{n} 小时前",
+    "daysAgo": "{n} 天前"
+  }
+}

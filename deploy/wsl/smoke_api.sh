@@ -135,10 +135,11 @@ expect_json "reports 列表（缺失=空数组）" 200 "body['success'] is True"
 expect_json "POST 无 key 401"           401 "body['error']['code'] == 'UNAUTHORIZED'" -X POST "$BASE_URL/api/pipeline/run"
 expect_json "POST 错 key 401"           401 "body['error']['code'] == 'UNAUTHORIZED'" -X POST -H "X-API-Key: wrong-key" "$BASE_URL/api/pipeline/run"
 
-# 7. 路径穿越变体（design/06 §8）
-expect "穿越 ..%2f config"              404 "$BASE_URL/api/reports/..%2f..%2f..%2fconfig%2fconfig.yaml/html"
-expect "穿越 ../../../../etc"           404 "$BASE_URL/api/reports/../../../../etc/passwd/html"
-expect "穿越 .... 变体"                 400 "$BASE_URL/api/reports/..../html"
+# 7. 路径穿越变体（design/06 §8）——--path-as-is 禁止 curl 客户端规范化 ../
+# （规范化会把 /api/reports/../.. 改写成 /etc/... 跨出 api 前缀，测不到服务端防护本身）
+expect "穿越 ..%2f config"              404 --path-as-is "$BASE_URL/api/reports/..%2f..%2f..%2fconfig%2fconfig.yaml/html"
+expect "穿越 ../../../../etc"           404 --path-as-is "$BASE_URL/api/reports/../../../../etc/passwd/html"
+expect "穿越 .... 变体"                 400 --path-as-is "$BASE_URL/api/reports/..../html"
 
 # 8. JSON 404（未匹配路由回 JSON 信封，非 HTML）
 expect_json "不存在的 API 路由 JSON 404"  404 "body['error']['code'] == 'NOT_FOUND'" "$BASE_URL/api/nonexistent"
