@@ -69,9 +69,31 @@
 
 **验收**：
 - [ ] smoke 脚本全绿（本地 + 经域名两遍）
-- [ ] `python -m web_server --port 8080` 与 systemd 两种方式行为一致
-- [ ] 抓包确认无任何响应包含 config 路径/key 类字段
-- [ ] 管线照常运行不受 web 并发读影响（连续 trigger 后库无锁错误）
+  ——本机 `--fixture` 24/24 全绿（2026-09-02，tag `web-v0.1`）；实机/经域名两遍在 Phase 0 完成后补跑
+- [ ] `python -m web_server --port 8080` 与 systemd 两种方式行为一致（systemd 侧待 Phase 0 实机）
+- [x] 抓包确认无任何响应包含 config 路径/key 类字段
+  ——本机侧由 smoke 断言覆盖（status 响应白名单投影 + 无路径泄露检查）
+- [ ] 管线照常运行不受 web 并发读影响（连续 trigger 后库无锁错误；待实机）
+
+### Phase 1 实际偏差回填（2026-09-02）
+
+1. **409 并发去重复用 `RATE_LIMITED` 码**（HTTP 409）：03 §4 信封无 409 专属码，
+   pipeline/crawl 运行中再触发返回 `RATE_LIMITED` + `Retry-After: 60` + 运行详情。
+2. **RSS 缺库返回 200 空列表而非 404**：工具层内部吞 `DataNotFoundError`（MCP 语义），
+   前端以空态卡等效处理。
+3. **`/api/news/search` 用 `SearchTools.search_news_unified`**：03 所写
+   `search_news_by_keyword` 方法不存在，unified 为其超集。
+4. **`system/dates` 走 `DataQueryTools.get_available_dates`**：
+   `StorageSyncTools.list_available_dates` 无 data_root 支持，D9② 数据根隔离
+   （fixture 模式依赖）只能走 ParserService 路径。
+5. **range 表达式集合为「最近7天 / 近7天 / 上周 / last 7 days」式**
+   （DateParser `RANGE_EXPRESSIONS`）；03 示例中的 `last7d` 连写形式不支持。
+6. **认证 fail-closed 语义补全**（06 §2 未定义）：服务端未配置 key 时，
+   POST 写端点返回 **503 `SERVER_MISCONFIGURED`**（区分配置问题与鉴权失败）；
+   smoke fixture 须注入已知 key 才能测出 401。
+7. **Popen 降级解释器修复**：`sys.executable` 不可 `Path.resolve()`
+   （venv python 是指向基础解释器的符号链接，resolve 后脱离 venv
+   site-packages，管线启动即 `ModuleNotFoundError`）。05 部署文档同理适用。
 
 ---
 
