@@ -4,6 +4,9 @@ from fastapi import APIRouter
 
 api_router = APIRouter()
 
-from . import system  # noqa: E402,F401  isort: skip
+from . import news, rss, system, topics  # noqa: E402,F401  isort: skip
 
 api_router.include_router(system.router)
+api_router.include_router(news.router)
+api_router.include_router(topics.router)
+api_router.include_router(rss.router)

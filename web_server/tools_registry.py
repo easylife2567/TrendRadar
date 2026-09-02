@@ -23,7 +23,7 @@ from mcp_server.tools.system import SystemManagementTools
 
 _REGISTRY_LOCK = threading.Lock()
 _read_tools: Dict[str, Dict] = {}
-_action_tools: Dict[str, SystemManagementTools] = {}
+_action_tools: Dict[str, Dict] = {}
 
 
 def _instance_key(project_root: str, data_root: str | None) -> str:
@@ -69,5 +69,7 @@ def get_action_tools(project_root: str, data_root: str | None = None) -> Dict:
     key = _instance_key(project_root, data_root)
     with _REGISTRY_LOCK:
         if key not in _action_tools:
-            _action_tools[key] = SystemManagementTools(project_root, data_root=data_root)
+            _action_tools[key] = {
+                "system": SystemManagementTools(project_root, data_root=data_root),
+            }
         return _action_tools[key]
