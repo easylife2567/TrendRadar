@@ -90,9 +90,19 @@ class AIClient:
 
         # 调用 LiteLLM
         response = completion(**params)
+        content = self._extract_content(response)
 
-        # 提取响应内容
-        # 某些模型/提供商返回 list（内容块）而非 str，统一转为 str
+        # 思考型模型（如 deepseek-v4-flash）会先输出思考链，可能耗尽 max_tokens
+        # 导致正文为空——HTTP 层面仍是成功响应，num_retries 不会触发，此处补偿重试
+        if not content.strip():
+            retry_params = dict(params)
+            retry_params["max_tokens"] = max_tokens * 2 if max_tokens else 0
+            content = self._extract_content(completion(**retry_params))
+        return content
+
+    @staticmethod
+    def _extract_content(response) -> str:
+        """提取响应正文（某些模型/提供商返回 list（内容块）而非 str，统一转为 str）"""
         content = response.choices[0].message.content
         if isinstance(content, list):
             content = "\n".join(
