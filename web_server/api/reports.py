@@ -35,7 +35,7 @@ _LATEST_ALIAS = "latest"
 
 
 def _resolve_report_dir(settings: WebSettings) -> Path:
-    return (settings.data_root / "output" / "html").resolve()
+    return (settings.output_root / "html").resolve()
 
 
 def _safe_report_file(settings: WebSettings, date: str, filename: str | None) -> Path:
