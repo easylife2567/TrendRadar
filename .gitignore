@@ -15,8 +15,9 @@ node_modules/
 .env.*
 !.env.example
 
-# 运行时数据：新增产物不再入库（已追踪的历史样例库 output/news/2025-12-*.db 不受影响）
+# 运行时数据：不入库（output/ 为爬虫产出；index.html 为每轮运行重写的报告快照）
 output/
+/index.html
 
 # Cloudflare Wrangler 本地缓存
 .wrangler/
